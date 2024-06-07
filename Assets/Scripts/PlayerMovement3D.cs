@@ -11,6 +11,7 @@ public class PlayerMovement3D : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        Debug.Log("PlayerMovement script started");
     }
 
     void Update()
@@ -37,6 +38,7 @@ public class PlayerMovement3D : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            Debug.Log("Jumping");
         }
     }
 

@@ -14,8 +14,6 @@ public class CameraSwitch : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("CameraSwitch script started");
-
         playerMovement3D = player.GetComponent<PlayerMovement3D>();
         playerMovement2D = player.GetComponent<PlayerMovement2D>();
 
@@ -36,8 +34,6 @@ public class CameraSwitch : MonoBehaviour
 
     void Update()
     {
-        Debug.Log("Update method called");
-
         if (Input.GetKeyDown(KeyCode.C))
         {
             Debug.Log("C key pressed");
@@ -67,5 +63,8 @@ public class CameraSwitch : MonoBehaviour
         {
             jumpable.layer = usingCamera1 ? defaultLayer : layer2D;
         }
+
+        // Set player layer as well for consistency
+        player.layer = usingCamera1 ? defaultLayer : layer2D;
     }
 }

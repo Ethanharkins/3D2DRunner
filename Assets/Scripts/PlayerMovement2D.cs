@@ -6,12 +6,12 @@ public class PlayerMovement2D : MonoBehaviour
     public float jumpForce = 5f;
     private bool isGrounded;
     private Rigidbody rb;
+    public float groundCheckRadius = 1.1f;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        Debug.Log("PlayerMovement2D script started");
     }
 
     void Update()
@@ -27,12 +27,10 @@ public class PlayerMovement2D : MonoBehaviour
         if (Input.GetKey(KeyCode.A))
         {
             moveX = -moveSpeed;
-            Debug.Log("Moving left");
         }
         else if (Input.GetKey(KeyCode.D))
         {
             moveX = moveSpeed;
-            Debug.Log("Moving right");
         }
 
         Vector3 move = new Vector3(moveX, rb.velocity.y, 0);
@@ -41,25 +39,35 @@ public class PlayerMovement2D : MonoBehaviour
 
     void Jump()
     {
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f) || IsGroundedOnJumpable();
+        isGrounded = IsGrounded();
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            Debug.Log("Jumping");
         }
     }
 
-    private bool IsGroundedOnJumpable()
+    private bool IsGrounded()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, Vector3.down, out hit, 1.1f))
+        Vector3 playerPosition = transform.position;
+        playerPosition.z = 0; // Ignore Z-axis for 2D ground check
+
+        // Check for ground directly below the player
+        if (Physics.Raycast(playerPosition, Vector3.down, groundCheckRadius, LayerMask.GetMask("Ground")))
         {
-            if (hit.collider.gameObject.CompareTag("Jumpable"))
+            return true;
+        }
+
+        // Check for nearby jumpable objects within the ground check radius
+        Collider[] hitColliders = Physics.OverlapSphere(playerPosition, groundCheckRadius);
+        foreach (var hitCollider in hitColliders)
+        {
+            if (hitCollider.CompareTag("Jumpable"))
             {
                 return true;
             }
         }
+
         return false;
     }
 
