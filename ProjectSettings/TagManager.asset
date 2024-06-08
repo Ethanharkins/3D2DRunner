@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Jumpable
   - Ground
+  - CheckPoint
   layers:
   - Default
   - TransparentFX

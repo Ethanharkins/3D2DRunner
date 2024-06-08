@@ -16,14 +16,33 @@ public class GameManager : MonoBehaviour
     private PlayerMovement3D playerMovement3D;
     private PlayerMovement2D playerMovement2D;
     private Rigidbody playerRigidbody;
-    private int currentCheckpointIndex = 0;
+    private int currentCheckpointIndex = -1; // Initialize with -1 to indicate no checkpoint reached yet
+
+    private void Awake()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "Level1")
+        {
+            InitializeLevel();
+        }
+    }
 
     private void Start()
     {
-        playerMovement3D = player.GetComponent<PlayerMovement3D>();
-        playerMovement2D = player.GetComponent<PlayerMovement2D>();
-        playerRigidbody = player.GetComponent<Rigidbody>();
+        InitializeLevel();
+    }
 
+    private void InitializeLevel()
+    {
         SwitchTo3D();
     }
 
@@ -102,7 +121,15 @@ public class GameManager : MonoBehaviour
 
     public void Respawn()
     {
-        player.transform.position = checkpoints[currentCheckpointIndex].position;
+        if (currentCheckpointIndex >= 0)
+        {
+            player.transform.position = checkpoints[currentCheckpointIndex].position;
+        }
+        else
+        {
+            // If no checkpoint reached, respawn at the initial position
+            player.transform.position = player.transform.position;
+        }
         Instantiate(respawnEffect, player.transform.position, Quaternion.identity);
         playerRigidbody.velocity = Vector3.zero;
     }
@@ -116,7 +143,15 @@ public class GameManager : MonoBehaviour
 
         if (other.CompareTag("Checkpoint"))
         {
-            currentCheckpointIndex++;
+            // Find the index of the checkpoint that was triggered
+            for (int i = 0; i < checkpoints.Length; i++)
+            {
+                if (checkpoints[i] == other.transform)
+                {
+                    currentCheckpointIndex = i;
+                    break;
+                }
+            }
             AudioSource.PlayClipAtPoint(checkpointSound, other.transform.position);
         }
     }
