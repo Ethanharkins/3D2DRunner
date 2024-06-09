@@ -35,11 +35,11 @@ public class PlayerMovement3D : MonoBehaviour
         }
         else if (Input.GetKey(KeyCode.A))
         {
-            moveVertical = -1;
+            moveVertical = 1;
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            moveVertical = 1;
+            moveVertical = -1;
         }
 
         Vector3 movement = new Vector3(moveHorizontal, 0.0f, moveVertical) * speed;

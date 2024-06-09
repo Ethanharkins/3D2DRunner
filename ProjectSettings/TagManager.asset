@@ -7,6 +7,7 @@ TagManager:
   - Jumpable
   - Ground
   - CheckPoint
+  - DeathZone
   layers:
   - Default
   - TransparentFX

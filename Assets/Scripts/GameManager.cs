@@ -8,17 +8,19 @@ public class GameManager : MonoBehaviour
     public Camera camera2D;
     public GameObject player;
     public Transform[] checkpoints;
-    public Transform[] respawnPoints;  // Add respawn points array
+    public Transform[] respawnPoints;
     public AudioClip jumpSound;
     public AudioClip moveSound;
     public AudioClip landSound;
     public AudioClip checkpointSound;
     public AudioClip cameraSwitchSound;
+    public AudioClip tickSound;
     public ParticleSystem respawnEffect;
+    public ParticleSystem deathEffect;
     public GameObject pauseMenu;
     public TextMeshProUGUI timerText;
     public int timerDuration = 60;
-    public AudioClip tickSound;
+    public GameObject gameOverUI;  // Add reference to the Game Over UI
 
     private PlayerMovement3D playerMovement3D;
     private PlayerMovement2D playerMovement2D;
@@ -28,6 +30,7 @@ public class GameManager : MonoBehaviour
     private float timer;
     private float tickSoundCooldown = 1f;
     private float tickSoundTimer = 0f;
+    private bool isGameOver = false;  // Add flag for game over state
 
     private void Awake()
     {
@@ -65,6 +68,8 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (isGameOver) return;  // Stop updating if the game is over
+
         if (Input.GetKeyDown(KeyCode.C))
         {
             if (camera3D.gameObject.activeInHierarchy)
@@ -91,7 +96,7 @@ public class GameManager : MonoBehaviour
         if (timer <= 0)
         {
             timer = 0;
-            // Handle timer end (e.g., restart level, show game over screen, etc.)
+            GameOver();  // Trigger game over when the timer reaches 0
         }
         UpdateTimerText();
     }
@@ -168,6 +173,8 @@ public class GameManager : MonoBehaviour
     {
         if (other.CompareTag("DeathZone"))
         {
+            // Play death particle effect
+            Instantiate(deathEffect, player.transform.position, Quaternion.identity);
             Respawn();
         }
 
@@ -183,6 +190,15 @@ public class GameManager : MonoBehaviour
             }
             audioSource.PlayOneShot(checkpointSound);
         }
+    }
+
+    private void GameOver()
+    {
+        isGameOver = true;
+        Time.timeScale = 0;  // Stop game time
+        gameOverUI.SetActive(true);  // Show Game Over UI
+        playerMovement3D.enabled = false;  // Lock player movement
+        playerMovement2D.enabled = false;  // Lock player movement
     }
 
     public void LoadMainMenu()
