@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -7,16 +8,26 @@ public class GameManager : MonoBehaviour
     public Camera camera2D;
     public GameObject player;
     public Transform[] checkpoints;
+    public Transform[] respawnPoints;  // Add respawn points array
     public AudioClip jumpSound;
     public AudioClip moveSound;
+    public AudioClip landSound;
     public AudioClip checkpointSound;
+    public AudioClip cameraSwitchSound;
     public ParticleSystem respawnEffect;
     public GameObject pauseMenu;
+    public TextMeshProUGUI timerText;
+    public int timerDuration = 60;
+    public AudioClip tickSound;
 
     private PlayerMovement3D playerMovement3D;
     private PlayerMovement2D playerMovement2D;
     private Rigidbody playerRigidbody;
-    private int currentCheckpointIndex = -1; // Initialize with -1 to indicate no checkpoint reached yet
+    private int currentCheckpointIndex = -1;
+    private AudioSource audioSource;
+    private float timer;
+    private float tickSoundCooldown = 1f;
+    private float tickSoundTimer = 0f;
 
     private void Awake()
     {
@@ -38,12 +49,18 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        playerMovement3D = player.GetComponent<PlayerMovement3D>();
+        playerMovement2D = player.GetComponent<PlayerMovement2D>();
+        playerRigidbody = player.GetComponent<Rigidbody>();
+        audioSource = GetComponent<AudioSource>();
+        timer = timerDuration;
         InitializeLevel();
     }
 
     private void InitializeLevel()
     {
         SwitchTo3D();
+        UpdateTimerText();
     }
 
     private void Update()
@@ -58,12 +75,25 @@ public class GameManager : MonoBehaviour
             {
                 SwitchTo3D();
             }
+
+            // Play the camera switch sound
+            audioSource.PlayOneShot(cameraSwitchSound);
         }
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePauseMenu();
         }
+
+        // Update the countdown timer
+        timer -= Time.deltaTime;
+        tickSoundTimer -= Time.deltaTime;
+        if (timer <= 0)
+        {
+            timer = 0;
+            // Handle timer end (e.g., restart level, show game over screen, etc.)
+        }
+        UpdateTimerText();
     }
 
     private void SwitchTo3D()
@@ -121,14 +151,14 @@ public class GameManager : MonoBehaviour
 
     public void Respawn()
     {
-        if (currentCheckpointIndex >= 0)
+        if (currentCheckpointIndex >= 0 && currentCheckpointIndex < respawnPoints.Length)
         {
-            player.transform.position = checkpoints[currentCheckpointIndex].position;
+            player.transform.position = respawnPoints[currentCheckpointIndex].position;
         }
         else
         {
-            // If no checkpoint reached, respawn at the initial position
-            player.transform.position = player.transform.position;
+            // Default respawn position (could be the initial player position)
+            player.transform.position = checkpoints[0].position;
         }
         Instantiate(respawnEffect, player.transform.position, Quaternion.identity);
         playerRigidbody.velocity = Vector3.zero;
@@ -143,7 +173,6 @@ public class GameManager : MonoBehaviour
 
         if (other.CompareTag("Checkpoint"))
         {
-            // Find the index of the checkpoint that was triggered
             for (int i = 0; i < checkpoints.Length; i++)
             {
                 if (checkpoints[i] == other.transform)
@@ -152,7 +181,7 @@ public class GameManager : MonoBehaviour
                     break;
                 }
             }
-            AudioSource.PlayClipAtPoint(checkpointSound, other.transform.position);
+            audioSource.PlayOneShot(checkpointSound);
         }
     }
 
@@ -166,5 +195,15 @@ public class GameManager : MonoBehaviour
     {
         Time.timeScale = 1;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void UpdateTimerText()
+    {
+        timerText.text = Mathf.Ceil(timer).ToString();
+        if (tickSoundTimer <= 0 && timer > 0)
+        {
+            audioSource.PlayOneShot(tickSound);
+            tickSoundTimer = tickSoundCooldown;
+        }
     }
 }
