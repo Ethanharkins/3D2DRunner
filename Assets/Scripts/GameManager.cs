@@ -57,6 +57,12 @@ public class GameManager : MonoBehaviour
 
     private void InitializeLevel()
     {
+        if (camera3D == null || camera2D == null || playerMovement3D == null || playerMovement2D == null || playerRigidbody == null)
+        {
+            Debug.LogError("One or more required components are not assigned.");
+            return;
+        }
+
         SwitchTo3D();
         UpdateTimerText();
     }
@@ -96,6 +102,12 @@ public class GameManager : MonoBehaviour
 
     private void SwitchTo3D()
     {
+        if (camera3D == null || camera2D == null || playerMovement3D == null || playerMovement2D == null || playerRigidbody == null)
+        {
+            Debug.LogError("One or more required components are not assigned.");
+            return;
+        }
+
         camera3D.gameObject.SetActive(true);
         camera2D.gameObject.SetActive(false);
 
@@ -109,6 +121,12 @@ public class GameManager : MonoBehaviour
 
     private void SwitchTo2D()
     {
+        if (camera3D == null || camera2D == null || playerMovement3D == null || playerMovement2D == null || playerRigidbody == null)
+        {
+            Debug.LogError("One or more required components are not assigned.");
+            return;
+        }
+
         camera3D.gameObject.SetActive(false);
         camera2D.gameObject.SetActive(true);
 

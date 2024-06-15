@@ -17,7 +17,7 @@ public class PlayerMovement3D : MonoBehaviour
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        audioSource = FindObjectOfType<GameManager>().GetComponent<AudioSource>();
+        audioSource = gameObject.AddComponent<AudioSource>();
     }
 
     private void Update()
@@ -66,7 +66,7 @@ public class PlayerMovement3D : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Ground") && !isGrounded)
+        if ((collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Jumpable")) && !isGrounded)
         {
             audioSource.PlayOneShot(landSound);
             isGrounded = true;
@@ -75,7 +75,7 @@ public class PlayerMovement3D : MonoBehaviour
 
     private void OnCollisionStay(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Jumpable"))
         {
             isGrounded = true;
         }
@@ -83,7 +83,7 @@ public class PlayerMovement3D : MonoBehaviour
 
     private void OnCollisionExit(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (collision.gameObject.CompareTag("Ground") || collision.gameObject.CompareTag("Jumpable"))
         {
             isGrounded = false;
         }
