@@ -7,6 +7,7 @@ public class GameManager : MonoBehaviour
     public Camera camera3D;
     public Camera camera2D;
     public GameObject player;
+    public GameObject movingBlock;  // Reference to the moving block
     public AudioClip jumpSound;
     public AudioClip moveSound;
     public AudioClip landSound;
@@ -26,6 +27,7 @@ public class GameManager : MonoBehaviour
     private float tickSoundCooldown = 1f;
     private float tickSoundTimer = 0f;
     private bool isGameOver = false;
+    private MovingBlock movingBlockScript;
 
     private void Awake()
     {
@@ -51,18 +53,13 @@ public class GameManager : MonoBehaviour
         playerMovement2D = player.GetComponent<PlayerMovement2D>();
         playerRigidbody = player.GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
+        movingBlockScript = movingBlock.GetComponent<MovingBlock>();
         timer = timerDuration;
         InitializeLevel();
     }
 
     private void InitializeLevel()
     {
-        if (camera3D == null || camera2D == null || playerMovement3D == null || playerMovement2D == null || playerRigidbody == null)
-        {
-            Debug.LogError("One or more required components are not assigned.");
-            return;
-        }
-
         SwitchTo3D();
         UpdateTimerText();
     }
@@ -102,12 +99,6 @@ public class GameManager : MonoBehaviour
 
     private void SwitchTo3D()
     {
-        if (camera3D == null || camera2D == null || playerMovement3D == null || playerMovement2D == null || playerRigidbody == null)
-        {
-            Debug.LogError("One or more required components are not assigned.");
-            return;
-        }
-
         camera3D.gameObject.SetActive(true);
         camera2D.gameObject.SetActive(false);
 
@@ -117,16 +108,13 @@ public class GameManager : MonoBehaviour
         playerRigidbody.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
 
         SetGhostBlocksActive(false);
+
+        // Notify the moving block to use the first set of movement points
+        movingBlockScript.SetMovementPoints(movingBlockScript.pointA1, movingBlockScript.pointB1);
     }
 
     private void SwitchTo2D()
     {
-        if (camera3D == null || camera2D == null || playerMovement3D == null || playerMovement2D == null || playerRigidbody == null)
-        {
-            Debug.LogError("One or more required components are not assigned.");
-            return;
-        }
-
         camera3D.gameObject.SetActive(false);
         camera2D.gameObject.SetActive(true);
 
@@ -136,6 +124,9 @@ public class GameManager : MonoBehaviour
         playerRigidbody.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotation;
 
         SetGhostBlocksActive(true);
+
+        // Notify the moving block to use the second set of movement points
+        movingBlockScript.SetMovementPoints(movingBlockScript.pointA2, movingBlockScript.pointB2, true);
     }
 
     private void SetGhostBlocksActive(bool isActive)
