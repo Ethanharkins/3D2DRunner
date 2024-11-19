@@ -18,7 +18,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI timerText;
     public int timerDuration = 60;
     public GameObject pauseMenu;
-    public GameObject winCanvas; // Assign your WinCanvas here
+    public GameObject winCanvas;
 
     private PlayerMovement3D playerMovement3D;
     private PlayerMovement2D playerMovement2D;
@@ -33,20 +33,34 @@ public class GameManager : MonoBehaviour
     // List to cache all objects tagged "Jumpable"
     private List<GameObject> jumpableObjects = new List<GameObject>();
 
+    // Singleton instance
+    private static GameManager instance;
+
     private void Awake()
     {
-        Time.timeScale = 1; // Ensure game time runs at the beginning
+        // Implement Singleton pattern
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject); // Persist GameManager across scenes
+    }
+
+    private void OnEnable()
+    {
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        InitializeLevel();
+        InitializeLevel(); // Reinitialize references on scene load
     }
 
     private void Start()
@@ -57,24 +71,22 @@ public class GameManager : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
         timer = timerDuration;
 
-        pauseMenu.SetActive(false); // Ensure pause menu is off at start
-        winCanvas.SetActive(false); // Ensure win canvas is off at start
-        CacheJumpableObjects(); // Cache all "Jumpable" objects at the start
+        pauseMenu.SetActive(false);
+        winCanvas.SetActive(false);
+        CacheJumpableObjects();
         InitializeLevel();
 
-        // Lock and hide the cursor at the start of the game
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
     private void CacheJumpableObjects()
     {
-        // Find all objects in the scene tagged "Jumpable", even if inactive
         GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
 
         foreach (GameObject obj in allObjects)
         {
-            if (obj.CompareTag("Jumpable") && obj.scene.IsValid()) // Ensure it's in the current scene
+            if (obj.CompareTag("Jumpable") && obj.scene.IsValid())
             {
                 jumpableObjects.Add(obj);
             }
@@ -90,22 +102,20 @@ public class GameManager : MonoBehaviour
         isPaused = false;
 
         // Reset UI
-        gameOverUI.SetActive(false);
-        pauseMenu.SetActive(false);
-        winCanvas.SetActive(false);
+        if (gameOverUI != null) gameOverUI.SetActive(false);
+        if (pauseMenu != null) pauseMenu.SetActive(false);
+        if (winCanvas != null) winCanvas.SetActive(false);
 
         // Reset timer
         timer = timerDuration;
         UpdateTimerText();
 
-        // Reset player movement
+        // Reset player movement and camera
         if (playerMovement3D != null) playerMovement3D.enabled = true;
         if (playerMovement2D != null) playerMovement2D.enabled = false;
 
-        // Reset camera
         SwitchTo3D();
 
-        // Resume the game
         Time.timeScale = 1;
     }
 
@@ -144,8 +154,7 @@ public class GameManager : MonoBehaviour
             UpdateTimerText();
         }
 
-        // Show the cursor if any UI is active
-        if (pauseMenu.activeSelf || winCanvas.activeSelf)
+        if ((pauseMenu != null && pauseMenu.activeSelf) || (winCanvas != null && winCanvas.activeSelf))
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -167,7 +176,6 @@ public class GameManager : MonoBehaviour
 
         playerRigidbody.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
 
-        // Disable all objects tagged "Jumpable"
         ToggleJumpableObjects(false);
     }
 
@@ -181,7 +189,6 @@ public class GameManager : MonoBehaviour
 
         playerRigidbody.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotation;
 
-        // Enable all objects tagged "Jumpable"
         ToggleJumpableObjects(true);
     }
 
@@ -189,12 +196,9 @@ public class GameManager : MonoBehaviour
     {
         foreach (GameObject jumpable in jumpableObjects)
         {
-            if (jumpable != null) // Check in case objects were deleted
+            if (jumpable != null)
             {
                 jumpable.SetActive(isActive);
-
-                // Debug log for verification
-                Debug.Log($"{jumpable.name} set to active: {isActive}");
             }
         }
     }
@@ -219,14 +223,18 @@ public class GameManager : MonoBehaviour
     {
         isGameOver = true;
         Time.timeScale = 0;
-        gameOverUI.SetActive(true);
+        if (gameOverUI != null) gameOverUI.SetActive(true);
         if (playerMovement3D != null) playerMovement3D.enabled = false;
         if (playerMovement2D != null) playerMovement2D.enabled = false;
     }
 
     private void UpdateTimerText()
     {
-        timerText.text = Mathf.Ceil(timer).ToString();
+        if (timerText != null)
+        {
+            timerText.text = Mathf.Ceil(timer).ToString();
+        }
+
         if (tickSoundTimer <= 0 && timer > 0)
         {
             audioSource.PlayOneShot(tickSound);
@@ -253,10 +261,19 @@ public class GameManager : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("WinZone"))
         {
-            winCanvas.SetActive(true); // Show the WinCanvas
-            Time.timeScale = 0; // Pause the game
+            if (winCanvas != null)
+            {
+                winCanvas.SetActive(true);
+            }
+
+            Time.timeScale = 0;
+
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            Debug.Log("Player reached the Win Zone!");
         }
     }
 }
