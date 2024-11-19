@@ -38,15 +38,24 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        // Implement Singleton pattern
+        // Singleton implementation to prevent duplicates
         if (instance != null && instance != this)
         {
             Destroy(gameObject);
             return;
         }
         instance = this;
-        DontDestroyOnLoad(gameObject); // Persist GameManager across scenes
+        DontDestroyOnLoad(gameObject); // Persist this object across scenes
     }
+
+    // Modified OnSceneLoaded to reinitialize only necessary elements
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Reinitialize scene-specific elements if needed
+        InitializeLevel();
+        CacheJumpableObjects(); // Re-cache objects if scene changes
+    }
+
 
     private void OnEnable()
     {
@@ -58,10 +67,6 @@ public class GameManager : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        InitializeLevel(); // Reinitialize references on scene load
-    }
 
     private void Start()
     {
@@ -75,9 +80,6 @@ public class GameManager : MonoBehaviour
         winCanvas.SetActive(false);
         CacheJumpableObjects();
         InitializeLevel();
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
     }
 
     private void CacheJumpableObjects()
@@ -152,17 +154,6 @@ public class GameManager : MonoBehaviour
                 GameOver();
             }
             UpdateTimerText();
-        }
-
-        if ((pauseMenu != null && pauseMenu.activeSelf) || (winCanvas != null && winCanvas.activeSelf))
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
         }
     }
 
@@ -250,7 +241,8 @@ public class GameManager : MonoBehaviour
 
     public void RestartScene()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Time.timeScale = 1;
+        SceneManager.LoadScene("Level1"); // Load "Level1" instead of restarting the current scene
     }
 
     public void LoadNextLevel()
@@ -269,9 +261,6 @@ public class GameManager : MonoBehaviour
             }
 
             Time.timeScale = 0;
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
 
             Debug.Log("Player reached the Win Zone!");
         }

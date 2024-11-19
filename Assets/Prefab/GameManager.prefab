@@ -46,19 +46,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b5b49deae68ff34bad61e0b5fc0cf12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  camera3D: {fileID: 0}
-  camera2D: {fileID: 0}
-  player: {fileID: 0}
+  camera3D: {fileID: 715992875347427022, guid: 35240e1ce5b65a0498accf6d67d9b7be, type: 3}
+  camera2D: {fileID: 7269399053771266644, guid: 68b2af061b1faa0459cd24e175e4e16c, type: 3}
+  player: {fileID: 192719710365999242, guid: d784600ceb0c1e84c9740b77f730a208, type: 3}
   jumpSound: {fileID: 8300000, guid: aa1d78ed3bb21af4ba1c64a23b4cdf52, type: 3}
   moveSound: {fileID: 8300000, guid: 272e5d5d1c260f94db888f6037f22c5b, type: 3}
   landSound: {fileID: 8300000, guid: e65928d98439f6e458fe173ee8344662, type: 3}
   checkpointSound: {fileID: 8300000, guid: e7d797741826b2a4198b05de32dc40dd, type: 3}
   cameraSwitchSound: {fileID: 8300000, guid: 16f4359739e21ea43bf64c5d54cb1154, type: 3}
   tickSound: {fileID: 8300000, guid: 428c17af52049e94ea9f2221ed428ed9, type: 3}
-  pauseMenu: {fileID: 0}
-  gameOverUI: {fileID: 0}
-  timerText: {fileID: 0}
+  gameOverUI: {fileID: 3421310231003611960}
+  timerText: {fileID: 4104107123463542524, guid: 5aea8bae08b677c4095dbde32548a900, type: 3}
   timerDuration: 180
+  pauseMenu: {fileID: 8831006005920893526, guid: 7b1da87722be36145b233f9a7464a676, type: 3}
+  winCanvas: {fileID: 3941358453959286186, guid: 4f2cf7be198b4f94ea79a897627d6e27, type: 3}
 --- !u!114 &3421310231003611967
 MonoBehaviour:
   m_ObjectHideFlags: 0

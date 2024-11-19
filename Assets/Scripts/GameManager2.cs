@@ -38,18 +38,15 @@ public class GameManager2 : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        InitializeReferences(); // Reinitialize scene-specific references
+        // Ensure references are re-established on scene load
+        InitializeReferences();
     }
 
     private void InitializeReferences()
     {
-        // Ensure all UI is hidden at the start
+        // Hide UI at the start
         if (winCanvas != null) winCanvas.SetActive(false);
         if (pauseMenu != null) pauseMenu.SetActive(false);
-
-        // Hide the cursor during gameplay
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
 
         // Dynamically reassign GameManager if missing
         if (gameManager == null)
@@ -62,19 +59,24 @@ public class GameManager2 : MonoBehaviour
         }
     }
 
-    private void Update()
+    public void RestartScene()
     {
-        // Show cursor when PauseMenu or WinCanvas is active
-        if ((pauseMenu != null && pauseMenu.activeSelf) || (winCanvas != null && winCanvas.activeSelf))
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        // Reload the current scene while preserving GameManager references
+        Scene currentScene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(currentScene.name);
+    }
+
+    public void LoadNextLevel()
+    {
+        // Load the next scene by incrementing the build index
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        SceneManager.LoadScene(currentSceneIndex + 1);
+    }
+
+    public void LoadMainMenu()
+    {
+        // Load the Main Menu scene
+        SceneManager.LoadScene("MainMenu");
     }
 
     private void OnTriggerEnter(Collider other)
@@ -89,10 +91,6 @@ public class GameManager2 : MonoBehaviour
 
             // Stop the game timer by pausing the game
             Time.timeScale = 0;
-
-            // Unlock and show the cursor
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
 
             Debug.Log("Player reached the Win Zone!");
         }
