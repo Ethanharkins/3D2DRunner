@@ -1,23 +1,24 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
     public Camera camera3D;
     public Camera camera2D;
     public GameObject player;
-    public GameObject movingBlock;  // Reference to the moving block
     public AudioClip jumpSound;
     public AudioClip moveSound;
     public AudioClip landSound;
     public AudioClip checkpointSound;
     public AudioClip cameraSwitchSound;
     public AudioClip tickSound;
-    public GameObject pauseMenu;
     public GameObject gameOverUI;
     public TextMeshProUGUI timerText;
     public int timerDuration = 60;
+    public GameObject pauseMenu;
+    public GameObject winCanvas; // Assign your WinCanvas here
 
     private PlayerMovement3D playerMovement3D;
     private PlayerMovement2D playerMovement2D;
@@ -27,10 +28,14 @@ public class GameManager : MonoBehaviour
     private float tickSoundCooldown = 1f;
     private float tickSoundTimer = 0f;
     private bool isGameOver = false;
-    private MovingBlock movingBlockScript;
+    private bool isPaused = false;
+
+    // List to cache all objects tagged "Jumpable"
+    private List<GameObject> jumpableObjects = new List<GameObject>();
 
     private void Awake()
     {
+        Time.timeScale = 1; // Ensure game time runs at the beginning
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -41,10 +46,7 @@ public class GameManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == "Level1")
-        {
-            InitializeLevel();
-        }
+        InitializeLevel();
     }
 
     private void Start()
@@ -53,15 +55,58 @@ public class GameManager : MonoBehaviour
         playerMovement2D = player.GetComponent<PlayerMovement2D>();
         playerRigidbody = player.GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
-        movingBlockScript = movingBlock.GetComponent<MovingBlock>();
         timer = timerDuration;
+
+        pauseMenu.SetActive(false); // Ensure pause menu is off at start
+        winCanvas.SetActive(false); // Ensure win canvas is off at start
+        CacheJumpableObjects(); // Cache all "Jumpable" objects at the start
         InitializeLevel();
+
+        // Lock and hide the cursor at the start of the game
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void CacheJumpableObjects()
+    {
+        // Find all objects in the scene tagged "Jumpable", even if inactive
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+
+        foreach (GameObject obj in allObjects)
+        {
+            if (obj.CompareTag("Jumpable") && obj.scene.IsValid()) // Ensure it's in the current scene
+            {
+                jumpableObjects.Add(obj);
+            }
+        }
+
+        Debug.Log($"Cached {jumpableObjects.Count} objects tagged as 'Jumpable'.");
     }
 
     private void InitializeLevel()
     {
-        SwitchTo3D();
+        // Reset game state
+        isGameOver = false;
+        isPaused = false;
+
+        // Reset UI
+        gameOverUI.SetActive(false);
+        pauseMenu.SetActive(false);
+        winCanvas.SetActive(false);
+
+        // Reset timer
+        timer = timerDuration;
         UpdateTimerText();
+
+        // Reset player movement
+        if (playerMovement3D != null) playerMovement3D.enabled = true;
+        if (playerMovement2D != null) playerMovement2D.enabled = false;
+
+        // Reset camera
+        SwitchTo3D();
+
+        // Resume the game
+        Time.timeScale = 1;
     }
 
     private void Update()
@@ -87,14 +132,29 @@ public class GameManager : MonoBehaviour
             TogglePauseMenu();
         }
 
-        timer -= Time.deltaTime;
-        tickSoundTimer -= Time.deltaTime;
-        if (timer <= 0)
+        if (!isPaused)
         {
-            timer = 0;
-            GameOver();
+            timer -= Time.deltaTime;
+            tickSoundTimer -= Time.deltaTime;
+            if (timer <= 0)
+            {
+                timer = 0;
+                GameOver();
+            }
+            UpdateTimerText();
         }
-        UpdateTimerText();
+
+        // Show the cursor if any UI is active
+        if (pauseMenu.activeSelf || winCanvas.activeSelf)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     private void SwitchTo3D()
@@ -102,15 +162,13 @@ public class GameManager : MonoBehaviour
         camera3D.gameObject.SetActive(true);
         camera2D.gameObject.SetActive(false);
 
-        playerMovement3D.enabled = true;
-        playerMovement2D.enabled = false;
+        if (playerMovement3D != null) playerMovement3D.enabled = true;
+        if (playerMovement2D != null) playerMovement2D.enabled = false;
 
         playerRigidbody.constraints = RigidbodyConstraints.None | RigidbodyConstraints.FreezeRotation;
 
-        SetGhostBlocksActive(false);
-
-        // Notify the moving block to use the first set of movement points
-        movingBlockScript.SetMovementPoints(movingBlockScript.pointA1, movingBlockScript.pointB1);
+        // Disable all objects tagged "Jumpable"
+        ToggleJumpableObjects(false);
     }
 
     private void SwitchTo2D()
@@ -118,41 +176,42 @@ public class GameManager : MonoBehaviour
         camera3D.gameObject.SetActive(false);
         camera2D.gameObject.SetActive(true);
 
-        playerMovement3D.enabled = false;
-        playerMovement2D.enabled = true;
+        if (playerMovement3D != null) playerMovement3D.enabled = false;
+        if (playerMovement2D != null) playerMovement2D.enabled = true;
 
         playerRigidbody.constraints = RigidbodyConstraints.FreezePositionZ | RigidbodyConstraints.FreezeRotation;
 
-        SetGhostBlocksActive(true);
-
-        // Notify the moving block to use the second set of movement points
-        movingBlockScript.SetMovementPoints(movingBlockScript.pointA2, movingBlockScript.pointB2, true);
+        // Enable all objects tagged "Jumpable"
+        ToggleJumpableObjects(true);
     }
 
-    private void SetGhostBlocksActive(bool isActive)
+    private void ToggleJumpableObjects(bool isActive)
     {
-        GameObject[] jumpableBlocks = GameObject.FindGameObjectsWithTag("Jumpable");
-        foreach (GameObject block in jumpableBlocks)
+        foreach (GameObject jumpable in jumpableObjects)
         {
-            Transform ghostBlock = block.transform.Find("GhostBlock");
-            if (ghostBlock != null)
+            if (jumpable != null) // Check in case objects were deleted
             {
-                ghostBlock.gameObject.SetActive(isActive);
+                jumpable.SetActive(isActive);
+
+                // Debug log for verification
+                Debug.Log($"{jumpable.name} set to active: {isActive}");
             }
         }
     }
 
     private void TogglePauseMenu()
     {
-        if (pauseMenu.activeInHierarchy)
+        if (isPaused)
         {
             pauseMenu.SetActive(false);
             Time.timeScale = 1;
+            isPaused = false;
         }
         else
         {
             pauseMenu.SetActive(true);
             Time.timeScale = 0;
+            isPaused = true;
         }
     }
 
@@ -161,8 +220,18 @@ public class GameManager : MonoBehaviour
         isGameOver = true;
         Time.timeScale = 0;
         gameOverUI.SetActive(true);
-        playerMovement3D.enabled = false;
-        playerMovement2D.enabled = false;
+        if (playerMovement3D != null) playerMovement3D.enabled = false;
+        if (playerMovement2D != null) playerMovement2D.enabled = false;
+    }
+
+    private void UpdateTimerText()
+    {
+        timerText.text = Mathf.Ceil(timer).ToString();
+        if (tickSoundTimer <= 0 && timer > 0)
+        {
+            audioSource.PlayOneShot(tickSound);
+            tickSoundTimer = tickSoundCooldown;
+        }
     }
 
     public void LoadMainMenu()
@@ -173,17 +242,21 @@ public class GameManager : MonoBehaviour
 
     public void RestartScene()
     {
-        Time.timeScale = 1;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    private void UpdateTimerText()
+    public void LoadNextLevel()
     {
-        timerText.text = Mathf.Ceil(timer).ToString();
-        if (tickSoundTimer <= 0 && timer > 0)
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        SceneManager.LoadScene(currentSceneIndex + 1);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
         {
-            audioSource.PlayOneShot(tickSound);
-            tickSoundTimer = tickSoundCooldown;
+            winCanvas.SetActive(true); // Show the WinCanvas
+            Time.timeScale = 0; // Pause the game
         }
     }
 }

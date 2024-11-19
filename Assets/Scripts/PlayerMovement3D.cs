@@ -25,24 +25,29 @@ public class PlayerMovement3D : MonoBehaviour
         float moveHorizontal = 0;
         float moveVertical = 0;
 
+        // Switch W/S to control left/right, and A/D to control forward/backward
         if (Input.GetKey(KeyCode.W))
         {
-            moveHorizontal = 1;
+            moveHorizontal = 1; // Move right
         }
         else if (Input.GetKey(KeyCode.S))
         {
-            moveHorizontal = -1;
+            moveHorizontal = -1; // Move left
         }
-        else if (Input.GetKey(KeyCode.A))
+
+        if (Input.GetKey(KeyCode.A))
         {
-            moveVertical = 1;
+            moveVertical = 1; // Move backward
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            moveVertical = -1;
+            moveVertical = -1; // Move forward
         }
 
+        // Combine movement in both directions
         Vector3 movement = new Vector3(moveHorizontal, 0.0f, moveVertical) * speed;
+
+        // Maintain current vertical velocity while applying movement
         rb.velocity = new Vector3(movement.x, rb.velocity.y, movement.z);
 
         // Play movement sound at intervals while moving
@@ -56,6 +61,7 @@ public class PlayerMovement3D : MonoBehaviour
             }
         }
 
+        // Jump logic
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             rb.AddForce(new Vector3(0, jumpForce, 0), ForceMode.Impulse);
